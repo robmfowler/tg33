@@ -3,7 +3,9 @@ import mido
 class VoiceBank:
     def __init__(self, sysex_file):
         self.messages = mido.read_syx_file(sysex_file)
-        assert (len(self.messages) == 2), "This program expects one voicebank."
+        message_count = len(self.messages)
+        if message_count != 1:
+            raise Exception(F"tg33 expects one voicebank (found {message_count}).")
 
     def __repr__(self):
         return super().__repr__()
