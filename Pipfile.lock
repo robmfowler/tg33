@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "571df880c39eb0f2b1239493454203d363b70c8cebfc5dbf392719b5c7dbdebd"
+            "sha256": "e7335482daf4361a2385e72de0a3a3913f238604fa790aa04140cf9888e8aa06"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -23,6 +23,10 @@
             ],
             "index": "pypi",
             "version": "==1.2.8"
+        },
+        "tg33": {
+            "editable": true,
+            "path": "."
         }
     },
     "develop": {
