@@ -1,4 +1,5 @@
 import mido
+from .SysexByte import SysexByte
 
 class VoiceBank:
     def __init__(self, sysex_file):
@@ -13,3 +14,10 @@ class VoiceBank:
 
     def __str__(self):
         return "\n".join([hexstr for hexstr in self.message.hex().split(' ')])
+
+    def transmit(self):
+        sysexIterate = iter(self.message.bytes())
+        datum = next(sysexIterate)
+        if datum != SysexByte.START:
+            raise ValueError(F"First byte is not Sysex start {format(SysexByte.START, 'x')}")
+        print(format(datum, "x"))

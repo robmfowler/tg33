@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import IntEnum
 
-class SysexByte(Enum):
+class SysexByte(IntEnum):
     START = 0xF0
     YAMAHA = 0x43
     DEVICE = 0x00
