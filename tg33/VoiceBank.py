@@ -16,8 +16,20 @@ class VoiceBank:
         return "\n".join([hexstr for hexstr in self.message.hex().split(' ')])
 
     def transmit(self):
-        sysexIterate = iter(self.message.bytes())
-        datum = next(sysexIterate)
-        if datum != SysexByte.START:
-            raise ValueError(F"First byte is not Sysex start {format(SysexByte.START, 'x')}")
-        print(format(datum, "x"))
+        sysex = enumerate(self.message.bytes())
+        self.extract_beginning(sysex)
+
+    def parse_byte(self, sysex, expected_value):
+        i, b = next(sysex)
+        if b != expected_value:
+            raise ValueError(F"Byte {i} is not {format(expected_value, 'x')}")
+        print(format(b, 'x'))
+        return b
+
+    def extract_beginning(self, sysex):
+        save = bytearray()
+        save.append(self.parse_byte(sysex, SysexByte.START))
+        save.append(self.parse_byte(sysex, SysexByte.YAMAHA))
+        save.append(self.parse_byte(sysex, SysexByte.DEVICE))
+        save.append(self.parse_byte(sysex, SysexByte.BULK))
+        
