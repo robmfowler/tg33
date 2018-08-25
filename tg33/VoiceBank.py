@@ -20,27 +20,21 @@ class VoiceBank:
         self.extract_beginning(sysex)
         self.extract_first_voice(sysex)
 
-    def parse_expected_byte(self, sysex, expected_value):
+    def parse_expected_byte(self, sysex, expected_value, format_code='x'):
         i, b = next(sysex)
         if b != expected_value:
             raise ValueError(F"Byte {i} is not {format(expected_value, 'x')}")
-        print(format(b, 'x'))
+        print(format(b, format_code))
         return b
 
-    def parse_byte(self, sysex):
-        i, b = next(sysex)
-        print(format(b, 'x'))
+    def parse_byte(self, sysex, format_code='x'):
+        b = next(sysex)[1]
+        print(format(b, format_code))
         return b
 
-    def parse_voice_size(self, sysex):
-        save = bytearray()
-        msb_size = self.parse_byte(sysex)
-        print(F"msb_size {format(msb_size, 'd')}")
-        save.append(msb_size)
-        lsb_size =  self.parse_byte(sysex)
-        print(F"lsb_size {format(lsb_size, 'd')}")
-        save.append(lsb_size)
-
+    def calculate_voice_size(self, msb, lsb):
+        return lsb + (msb << 7)
+ 
     #def parse_voice_data(self, sysex, size):
 
     #def parse_bulk_type(self, sysex):
@@ -48,7 +42,13 @@ class VoiceBank:
     #def parse_voice_checksum(self, sysex):
 
     def extract_first_voice(self, sysex):
-        self.parse_voice_size(sysex)
+        save = bytearray()
+        msb = self.parse_byte(sysex, '08b')
+        save.append(msb)
+        lsb = self.parse_byte(sysex, '08b')
+        save.append(lsb)
+        voice_size = self.calculate_voice_size(msb, lsb)
+        print(F"voice size (byte count) {format(voice_size, 'd')}")       
 
     #def extract_voice(self, sysex):
 
@@ -57,5 +57,5 @@ class VoiceBank:
         save.append(self.parse_expected_byte(sysex, SysexByte.START))
         save.append(self.parse_expected_byte(sysex, SysexByte.YAMAHA))
         save.append(self.parse_expected_byte(sysex, SysexByte.DEVICE))
-        save.append(self.parse_expected_byte(sysex, SysexByte.BULK))
+        save.append(self.parse_expected_byte(sysex, SysexByte.MODEL))
         
