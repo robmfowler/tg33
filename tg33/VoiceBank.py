@@ -1,6 +1,8 @@
 import mido
 from .SysexByte import SysexByte
 
+VOICE_BANK_BULK_COMMAND = "LM  0012VC"
+
 class VoiceBank:
     def __init__(self, sysex_file):
         messages = mido.read_syx_file(sysex_file)
@@ -48,7 +50,15 @@ class VoiceBank:
         lsb = self.parse_byte(sysex, '08b')
         save.append(lsb)
         voice_size = self.calculate_voice_size(msb, lsb)
-        print(F"voice size (byte count) {format(voice_size, 'd')}")       
+        print(F"voice size (byte count) {format(voice_size, 'd')}")
+        extracted_command = ''
+        for _ in range (10):
+            b = next(sysex)[1]
+            extracted_command += str(chr(b))
+            save.append(b)
+        print(F"bulk command: {extracted_command}")
+        if extracted_command != VOICE_BANK_BULK_COMMAND:
+            raise ValueError(F"extracted command not '{VOICE_BANK_BULK_COMMAND}''")
 
     #def extract_voice(self, sysex):
 
