@@ -2,6 +2,7 @@ import mido
 from .SysexByte import SysexByte
 
 VOICE_BANK_BULK_COMMAND = "LM  0012VC"
+_last_voice_start = 9999999
 
 class VoiceBank:
     def __init__(self, sysex_file):
@@ -29,6 +30,7 @@ class VoiceBank:
             self.extract_voice(sysex, voice_size, 0, save)
         if (next(sysex, 0xF7) != 0xF7):
             raise ValueError("Sysex didn't end as expected")
+        print('')
         print("transmit complete!")
 
     def parse_expected_byte(self, sysex, expected_value):
@@ -37,8 +39,15 @@ class VoiceBank:
             raise ValueError(F"Byte {i} is not {format(expected_value, 'x')}")
         return b
 
-    def parse_byte(self, sysex):
-        return next(sysex)[1]
+    def parse_byte(self, sysex, first_byte_of_voice = False):
+        global _last_voice_start
+        i, b = next(sysex)
+        if first_byte_of_voice:
+            _last_voice_start = i
+            print('')
+        if 0x0C <= (i - _last_voice_start) <= 0x13:
+             print(str(chr(b)), end='')
+        return b
 
     def calculate_voice_size(self, msb, lsb):
         return (msb << 7) + lsb
@@ -51,7 +60,6 @@ class VoiceBank:
         lsb = self.parse_byte(sysex)
         save.append(lsb)
         voice_size = self.calculate_voice_size(msb, lsb)
-        print(F"voice size (byte count) {format(voice_size, 'd')}")
         return voice_size
 
     def extract_first_voice(self, sysex, save):
@@ -64,18 +72,19 @@ class VoiceBank:
             save.append(b)
             data_sum += b
             data_sum &= 0b01111111
-        print(F"bulk command: {extracted_command}")
         if extracted_command != VOICE_BANK_BULK_COMMAND:
             raise ValueError(F"extracted command not '{VOICE_BANK_BULK_COMMAND}''")
         self.extract_voice(sysex, voice_size - 10, data_sum, save)
 
     def extract_voice(self, sysex, voice_size, data_sum_so_far, save):
         data_sum = data_sum_so_far
+        first_byte_of_voice = True
         for _ in range (voice_size):
-            b = self.parse_byte(sysex)
+            b = self.parse_byte(sysex, first_byte_of_voice)
             save.append(b)
             data_sum += b
             data_sum &= 0b01111111
+            first_byte_of_voice = False
         checksum = self.parse_byte(sysex)
         save.append(checksum)
         result = (data_sum + checksum) % 128
