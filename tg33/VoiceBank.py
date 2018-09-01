@@ -31,27 +31,18 @@ class VoiceBank:
             raise ValueError("Sysex didn't end as expected")
         print("transmit complete!")
 
-    def parse_expected_byte(self, sysex, expected_value, format_code='x'):
+    def parse_expected_byte(self, sysex, expected_value):
         i, b = next(sysex)
         if b != expected_value:
             raise ValueError(F"Byte {i} is not {format(expected_value, 'x')}")
-        print(format(b, format_code))
         return b
 
-    def parse_byte(self, sysex, format_code='x'):
-        b = next(sysex)[1]
-        print(format(b, format_code))
-        return b
+    def parse_byte(self, sysex):
+        return next(sysex)[1]
 
     def calculate_voice_size(self, msb, lsb):
         return (msb << 7) + lsb
  
-    #def parse_voice_data(self, sysex, size):
-
-    #def parse_bulk_type(self, sysex):
-
-    #def parse_voice_checksum(self, sysex):
-
     def parse_voice_size(self, sysex, save):
         msb = self.parse_byte(sysex)
         save.append(msb)
@@ -68,7 +59,7 @@ class VoiceBank:
         extracted_command = ''
         data_sum = 0
         for _ in range (10):
-            b = next(sysex)[1]
+            b = self.parse_byte(sysex)
             extracted_command += str(chr(b))
             save.append(b)
             data_sum += b
@@ -81,17 +72,14 @@ class VoiceBank:
     def extract_voice(self, sysex, voice_size, data_sum_so_far, save):
         data_sum = data_sum_so_far
         for _ in range (voice_size):
-            b = next(sysex)[1]
+            b = self.parse_byte(sysex)
             save.append(b)
             data_sum += b
             data_sum &= 0b01111111
-        print(F"data_sum {format(data_sum, '08b')}")
-        checksum = next(sysex)[1]
+        checksum = self.parse_byte(sysex)
         save.append(checksum)
-        print(F"checksum {format(checksum, '08b')}")
         result = (data_sum + checksum) % 128
         if (result != 0):
-            print(F"checksum failed; their sum {format(result, '08b')}")
             raise ValueError("Checksum failed!")
 
     def extract_beginning(self, sysex, save):
