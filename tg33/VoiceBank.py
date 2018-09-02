@@ -25,10 +25,10 @@ class VoiceBank:
         self.extract_first_voice(sysex, save)
         for _ in range(63):
             voice_size = self.parse_voice_size(sysex, save)
-            if voice_size == 0xF7:
+            if voice_size == SysexByte.END:
                 break
             self.extract_voice(sysex, voice_size, 0, save)
-        if (next(sysex, 0xF7) != 0xF7):
+        if (next(sysex, SysexByte.END) != SysexByte.END):
             raise ValueError("Sysex didn't end as expected")
         print('')
         print("transmit complete!")
@@ -55,8 +55,8 @@ class VoiceBank:
     def parse_voice_size(self, sysex, save):
         msb = self.parse_byte(sysex)
         save.append(msb)
-        if (msb == 0xF7):
-            return 0xF7 #end of sysex
+        if (msb == SysexByte.END):
+            return SysexByte.END #end of sysex
         lsb = self.parse_byte(sysex)
         save.append(lsb)
         voice_size = self.calculate_voice_size(msb, lsb)
