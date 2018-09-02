@@ -6,6 +6,7 @@ verify_ssl = true
 [packages]
 mido = "*"
 "tg33" = {path = ".", editable = true}
+python-rtmidi = "*"
 
 [requires]
 python_version = "3.7"
