@@ -20,17 +20,21 @@ class VoiceBank:
 
     def transmit(self):
         sysex = enumerate(self.message.bytes())
-        save = bytearray()
-        self.extract_beginning(sysex, save)
-        self.extract_first_voice(sysex, save)
+        voices = []
+        voices.append(self.extract_first_voice(sysex))
         for _ in range(63):
+            save = bytearray()
             voice_size = self.parse_voice_size(sysex, save)
             if voice_size == SysexByte.END:
                 break
-            self.extract_voice(sysex, voice_size, 0, save)
+            save.extend(self.extract_voice(sysex, voice_size, 0))
+            voices.append(save)
         if (next(sysex, SysexByte.END) != SysexByte.END):
             raise ValueError("Sysex didn't end as expected")
         print('')
+        for index, port_name in enumerate(mido.get_output_names()):
+            print(F"{index}: {port_name}")
+
         print("transmit complete!")
 
     def parse_expected_byte(self, sysex, expected_value):
@@ -62,38 +66,45 @@ class VoiceBank:
         voice_size = self.calculate_voice_size(msb, lsb)
         return voice_size
 
-    def extract_first_voice(self, sysex, save):
-        voice_size = self.parse_voice_size(sysex, save)
+    def extract_first_voice(self, sysex):
+        voice_bytes = bytearray()
+        voice_bytes.extend(self.extract_beginning(sysex)) 
+        voice_size = self.parse_voice_size(sysex, voice_bytes)
         extracted_command = ''
         data_sum = 0
         for _ in range (10):
             b = self.parse_byte(sysex)
             extracted_command += str(chr(b))
-            save.append(b)
+            voice_bytes.append(b)
             data_sum += b
             data_sum &= 0b01111111
         if extracted_command != VOICE_BANK_BULK_COMMAND:
             raise ValueError(F"extracted command not '{VOICE_BANK_BULK_COMMAND}''")
-        self.extract_voice(sysex, voice_size - 10, data_sum, save)
+        voice_bytes.extend(self.extract_voice(sysex, voice_size - 10, data_sum))
+        return voice_bytes
 
-    def extract_voice(self, sysex, voice_size, data_sum_so_far, save):
+    def extract_voice(self, sysex, voice_size, data_sum_so_far):
+        voice_bytes = bytearray()
         data_sum = data_sum_so_far
         first_byte_of_voice = True
         for _ in range (voice_size):
             b = self.parse_byte(sysex, first_byte_of_voice)
-            save.append(b)
+            voice_bytes.append(b)
             data_sum += b
             data_sum &= 0b01111111
             first_byte_of_voice = False
         checksum = self.parse_byte(sysex)
-        save.append(checksum)
+        voice_bytes.append(checksum)
         result = (data_sum + checksum) % 128
         if (result != 0):
             raise ValueError("Checksum failed!")
+        return voice_bytes
 
-    def extract_beginning(self, sysex, save):
-        save.append(self.parse_expected_byte(sysex, SysexByte.START))
-        save.append(self.parse_expected_byte(sysex, SysexByte.YAMAHA))
-        save.append(self.parse_expected_byte(sysex, SysexByte.DEVICE))
-        save.append(self.parse_expected_byte(sysex, SysexByte.MODEL))
+    def extract_beginning(self, sysex):
+        voice_bytes = bytearray()
+        voice_bytes.append(self.parse_expected_byte(sysex, SysexByte.START))
+        voice_bytes.append(self.parse_expected_byte(sysex, SysexByte.YAMAHA))
+        voice_bytes.append(self.parse_expected_byte(sysex, SysexByte.DEVICE))
+        voice_bytes.append(self.parse_expected_byte(sysex, SysexByte.MODEL))
+        return voice_bytes
         
