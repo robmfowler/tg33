@@ -45,13 +45,14 @@ class VoiceBank:
             print(F"Sending voice {index + 1}")
             self.transmit_bytes(midiout, voice)
             sleep(0.1)
+        midiout.send_message([SysexByte.END])
         del midiout
         print("transmit complete!")
 
     def transmit_bytes(self, midiout, voice):
         for b in iter(voice):
             midiout.send_message([b])
-            sleep(0.005)
+            sleep(0.00033)
 
     def parse_expected_byte(self, sysex, expected_value):
         i, b = next(sysex)
