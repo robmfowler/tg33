@@ -1,6 +1,5 @@
 from time import sleep
-import mido
-from mido.midifiles.meta import build_meta_message
+import rtmidi
 import readchar
 from .SysexByte import SysexByte
 
@@ -9,11 +8,8 @@ _last_voice_start = 9999999
 
 class VoiceBank:
     def __init__(self, sysex_file):
-        messages = mido.read_syx_file(sysex_file)
-        message_count = len(messages)
-        if message_count != 1:
-            raise ValueError(F"tg33 expects one voicebank (found {message_count}).")
-        self.message = messages[0]
+        with open(sysex_file, "rb") as message:
+            self.message = bytearray(message.read())
 
     def __repr__(self):
         return super().__repr__()
@@ -22,7 +18,7 @@ class VoiceBank:
         return "\n".join([hexstr for hexstr in self.message.hex().split(' ')])
 
     def transmit(self):
-        sysex = enumerate(self.message.bytes())
+        sysex = enumerate(self.message)
         voices = []
         voices.append(self.extract_first_voice(sysex))
         for _ in range(63):
@@ -35,7 +31,8 @@ class VoiceBank:
         if (next(sysex, SysexByte.END) != SysexByte.END):
             raise ValueError("Sysex didn't end as expected")
         print('')
-        ports = mido.get_output_names()
+        midiout = rtmidi.MidiOut()
+        ports = midiout.get_ports()
         for index, port in enumerate(ports):
             print(F"—> {index}: {port}")
         print("The available ports are numbered above.")
@@ -43,15 +40,13 @@ class VoiceBank:
         print("")
         c = readchar.readchar()
         print(c)
-        outport = mido.open_output(ports[int(c)])
+        midiout.open_port(int(c))
         for index, voice in enumerate(voices):
             print(F"Sending voice {index + 1}")
-            outport.send(self.construct_message(voice))
+            midiout.send_message(voice)
             sleep(0.1)
+        del midiout
         print("transmit complete!")
-
-    def construct_message(self, voice):
-        return build_meta_message('unknown_meta', voice) #unprocessed raw message
 
     def parse_expected_byte(self, sysex, expected_value):
         i, b = next(sysex)
