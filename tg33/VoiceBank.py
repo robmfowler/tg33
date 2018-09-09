@@ -1,4 +1,7 @@
+from time import sleep
 import mido
+from mido.midifiles.meta import build_meta_message
+import readchar
 from .SysexByte import SysexByte
 
 VOICE_BANK_BULK_COMMAND = "LM  0012VC"
@@ -32,10 +35,23 @@ class VoiceBank:
         if (next(sysex, SysexByte.END) != SysexByte.END):
             raise ValueError("Sysex didn't end as expected")
         print('')
-        for index, port_name in enumerate(mido.get_output_names()):
-            print(F"{index}: {port_name}")
-
+        ports = mido.get_output_names()
+        for index, port in enumerate(ports):
+            print(F"—> {index}: {port}")
+        print("The available ports are numbered above.")
+        print("Type the number of the port to which the voice bank should be transmitted: ", end='')
+        print("")
+        c = readchar.readchar()
+        print(c)
+        outport = mido.open_output(ports[int(c)])
+        for index, voice in enumerate(voices):
+            print(F"Sending voice {index + 1}")
+            outport.send(self.construct_message(voice))
+            sleep(0.1)
         print("transmit complete!")
+
+    def construct_message(self, voice):
+        return build_meta_message('unknown_meta', voice) #unprocessed raw message
 
     def parse_expected_byte(self, sysex, expected_value):
         i, b = next(sysex)
