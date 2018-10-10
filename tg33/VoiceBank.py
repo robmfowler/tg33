@@ -4,6 +4,7 @@ import readchar
 from .SysexByte import SysexByte
 
 VOICE_BANK_BULK_COMMAND = "LM  0012VC"
+VOICE_BANK_BULK_COMMAND_SY22 = "PK  2203VM"
 _last_voice_start = 9999999
 
 class VoiceBank:
@@ -96,7 +97,7 @@ class VoiceBank:
             data_sum += b
             data_sum &= 0b01111111
         if extracted_command != VOICE_BANK_BULK_COMMAND:
-            raise ValueError(F"extracted command not '{VOICE_BANK_BULK_COMMAND}''")
+            raise ValueError(F"extracted command '{extracted_command}' not recognized (expected '{VOICE_BANK_BULK_COMMAND}')")
         voice_bytes.extend(self.extract_voice(sysex, voice_size - 10, data_sum))
         return voice_bytes
 
